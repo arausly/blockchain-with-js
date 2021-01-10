@@ -1,5 +1,7 @@
 const server = require("./server");
 
-server.listen(3000, () => {
-  console.log("Server is 🏃🏃🏃 on port 3000");
+const port = process.argv[2];
+
+server.listen(port, () => {
+  console.log(`Server is 🏃🏃🏃 on port ${port}`);
 });

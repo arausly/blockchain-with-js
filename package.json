@@ -5,8 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --watchAll",
-    "start:app": "nodemon --watch dev -e js dev/server.js",
-    "start": "concurrently -n tests,server -c green,yellow 'yarn test' 'yarn start:app'"
+    "node_1": "nodemon dev/app.js 4001",
+    "node_2": "nodemon dev/app.js 4002",
+    "node_3": "nodemon dev/app.js 4003",
+    "node_4": "nodemon dev/app.js 4004",
+    "node_5": "nodemon dev/app.js 4005",
+    "start": "concurrently -n node_1,node_2,node_3,node_4,node_5 -c green,yellow,blue,red,white 'yarn node_1' 'yarn node_2'  'yarn node_3' 'yarn node_4' 'yarn node_5'"
   },
   "keywords": [],
   "author": "",
