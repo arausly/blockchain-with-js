@@ -40,4 +40,18 @@ describe("API routes tests", () => {
         done();
       });
   });
+
+  it("should mine a block successfully and respond with the new block mined", (done) => {
+    request(server)
+      .get("/mine")
+      .set("Accept", "application/json")
+      .expect(200)
+      .then((res) => {
+        const { block } = res.body;
+        expect(block).toBeTruthy();
+        expect(block.transactions.length).toBeGreaterThanOrEqual(1);
+        expect(block.hash).toContain("0000");
+        done();
+      });
+  });
 });
