@@ -1,9 +1,12 @@
 const sha256 = require("sha256");
+const port = process.argv[2];
 
 class Blockchain {
   constructor() {
     this.chain = [];
     this.unconfirmedTransactions = [];
+    this.currentNodeUrl = `http://localhost:${port}`;
+    this.networkNodes = [];
     this.createNewBlock(100, "000000", "000000");
   }
 

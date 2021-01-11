@@ -1,5 +1,6 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
 
 const nodeAddress = uuidv4().replace(/\-/g, "");
 
@@ -42,6 +43,57 @@ server.get("/mine", (req, res) => {
   return res.status(200).json({
     msg: "Successfully mined new block",
     block,
+  });
+});
+
+server.post("/register-and-broadcast-node", (req, res) => {
+  const networkNodeUrl = req.body.networkNodeUrl;
+  if (!bitcoin.networkNodes.includes(networkNodeUrl)) {
+    bitcoin.networkNodes.push(networkNodeUrl);
+  }
+
+  Promise.all(
+    bitcoin.networkNodes.map(async (nodeUrl) => {
+      return await axios.post(`${nodeUrl}/register-node`, {
+        networkNodeUrl,
+      });
+    })
+  )
+    .then(async () => {
+      return await axios.post(`${networkNodeUrl}/register-bulk-nodes`, {
+        allNetworkNodes: [...bitcoin.networkNodes, bitcoin.currentNodeUrl],
+      });
+    })
+    .then(() => {
+      return res.json({
+        msg: `Successfully added ${networkNodeUrl} to the blockchain network`,
+      });
+    });
+});
+
+server.post("/register-node", (req, res) => {
+  const networkNodeUrl = req.body.networkNodeUrl;
+
+  if (
+    !bitcoin.networkNodes.includes(networkNodeUrl) &&
+    bitcoin.currentNodeUrl !== networkNodeUrl
+  ) {
+    bitcoin.networkNodes.push(networkNodeUrl);
+    return res.status(200).json({
+      msg: `Successfully registered ${networkNodeUrl}`,
+    });
+  }
+
+  return res.status(200).json({
+    msg: `node is already registered`,
+  });
+});
+
+server.post("/register-bulk-nodes", (req, res) => {
+  const allNetworkNodes = req.body.allNetworkNodes;
+  bitcoin.networkNodes = allNetworkNodes;
+  return res.status(200).json({
+    msg: "Successfully bulk registration for all network nodes",
   });
 });
 
