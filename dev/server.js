@@ -91,7 +91,13 @@ server.post("/register-node", (req, res) => {
 
 server.post("/register-bulk-nodes", (req, res) => {
   const allNetworkNodes = req.body.allNetworkNodes;
-  bitcoin.networkNodes = allNetworkNodes;
+  const bulkNodes = [];
+  allNetworkNodes.forEach((networkNodeUrl) => {
+    if (networkNodeUrl !== bitcoin.currentNodeUrl) {
+      bulkNodes.push(networkNodeUrl);
+    }
+  });
+  bitcoin.networkNodes = bulkNodes;
   return res.status(200).json({
     msg: "Successfully bulk registration for all network nodes",
   });
