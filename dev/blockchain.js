@@ -1,4 +1,6 @@
 const sha256 = require("sha256");
+const { v4: uuidv4 } = require("uuid");
+
 const port = process.argv[2];
 
 class Blockchain {
@@ -48,9 +50,13 @@ class Blockchain {
       amount,
       input,
       output,
+      txRef: uuidv4().replace(/\-/g, ""),
     };
-    this.unconfirmedTransactions.push(newTransaction);
+    return newTransaction;
+  };
 
+  pushToUnconfirmedTransactions = (transaction) => {
+    this.unconfirmedTransactions.push(newTransaction);
     return this.getLastBlock()["index"] + 1;
   };
 

@@ -17,13 +17,29 @@ server.get("/blockchain", (req, res) => {
 });
 
 server.post("/transaction", (req, res) => {
+  const nextBlockNumber = bitcoin.pushToUnconfirmedTransactions(
+    req.body.transaction
+  );
+  res.json({
+    note: `Transaction will be added to the #${nextBlockNumber} block`,
+  });
+});
+
+server.post("/transaction/broadcast", (req, res) => {
   const { amount, input, output } = req.body;
   if (!amount || !input || !output) {
     return res.status(400).json({ msg: "Missing required parameter(s)" });
   }
-  const nextBlockNumber = bitcoin.createNewTransaction(amount, input, output);
-  res.json({
-    note: `Transaction will be added to the #${nextBlockNumber} block`,
+  const transaction = bitcoin.createNewTransaction(amount, input, output);
+  bitcoin.pushToUnconfirmedTransactions(transaction);
+  Promise.all(
+    bitcoin.networkNodes.map(async (nodeUrl) => {
+      return await axios.post(`${nodeUrl}/transaction`, {
+        transaction,
+      });
+    })
+  ).then(() => {
+    res.json({ note: "Transaction has been created successfully" });
   });
 });
 
