@@ -18,8 +18,9 @@ const killPorts = () => {
   ports.map((port, i) => {
     exec(`lsof -i:${port}`, (error, stdout, stderr) => {
       handleError(error, stderr);
-      const [pid] = stdout.match(/\d{5}/);
-      if (pid) {
+      const pidMatch = stdout.match(/\d{5}/);
+      if (pidMatch) {
+        const [pid] = pidMatch;
         exec(`kill ${pid}`, (error, stdout, stderr) => {
           handleError(error, stderr);
           console.log("\x1b[32m%s\x1b[0m", `[${i}] ${i + 1}/4 Stopped ${port}`);

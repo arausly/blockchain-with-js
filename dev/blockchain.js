@@ -56,7 +56,7 @@ class Blockchain {
   };
 
   pushToUnconfirmedTransactions = (transaction) => {
-    this.unconfirmedTransactions.push(newTransaction);
+    this.unconfirmedTransactions.push(transaction);
     return this.getLastBlock()["index"] + 1;
   };
 
@@ -76,6 +76,32 @@ class Blockchain {
       hash = this.hashBlock(previousBlockHash, blockData, nonce);
     }
     return nonce;
+  };
+
+  chainIsValid = (blockchain) => {
+    let validChain = true;
+    for (let i = 1; i < blockchain.chain.length; i++) {
+      const currentBlock = blockchain.chain[i];
+      const prevBlock = blockchain.chain[i - 1];
+      const blockData = {
+        transactions: currentBlock.transactions,
+        index: currentBlock.index,
+      };
+      const newHash = this.hashBlock(
+        prevBlock.hash,
+        blockData,
+        currentBlock.nonce
+      );
+      if (!newHash.startsWith("0000")) {
+        validChain = false;
+        break;
+      }
+      if (prevBlock.hash !== currentBlock.previousBlockHash) {
+        validChain = false;
+        break;
+      }
+    }
+    return validChain;
   };
 }
 

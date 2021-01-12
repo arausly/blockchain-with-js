@@ -31,7 +31,7 @@ server.post("/transaction/broadcast", (req, res) => {
     return res.status(400).json({ msg: "Missing required parameter(s)" });
   }
   const transaction = bitcoin.createNewTransaction(amount, input, output);
-  bitcoin.pushToUnconfirmedTransactions(transaction);
+  const nextBlockNumber = bitcoin.pushToUnconfirmedTransactions(transaction);
   Promise.all(
     bitcoin.networkNodes.map(async (nodeUrl) => {
       return await axios.post(`${nodeUrl}/transaction`, {
@@ -39,7 +39,9 @@ server.post("/transaction/broadcast", (req, res) => {
       });
     })
   ).then(() => {
-    res.json({ note: "Transaction has been created successfully" });
+    res.json({
+      note: `Transaction has been created successfully and will be add on ${nextBlockNumber}`,
+    });
   });
 });
 
@@ -52,13 +54,48 @@ server.get("/mine", (req, res) => {
   };
   const nonce = bitcoin.proofOfWork(previousBlockHash, currentBlockData);
   const hash = bitcoin.hashBlock(previousBlockHash, currentBlockData, nonce);
-
-  bitcoin.createNewTransaction(6.25, "00-COINBASE", nodeAddress);
+  const transactionObj = {
+    amount: 6.25,
+    input: "00-COINBASE",
+    output: nodeAddress,
+  };
 
   const block = bitcoin.createNewBlock(nonce, previousBlockHash, hash);
-  return res.status(200).json({
-    msg: "Successfully mined new block",
-    block,
+
+  Promise.all(
+    bitcoin.networkNodes.map(async (nodeUrl) => {
+      return await axios.post(`${nodeUrl}/receive-new-block`, {
+        block,
+      });
+    })
+  )
+    .then(() => {
+      return axios.post(
+        `${bitcoin.currentNodeUrl}/transaction/broadcast`,
+        transactionObj
+      );
+    })
+    .then(() => {
+      return res.status(200).json({
+        msg: "Successfully mined new block",
+        block,
+      });
+    });
+});
+
+server.post("/receive-new-block", (req, res) => {
+  const newBlock = req.body.block;
+  const lastBlock = bitcoin.getLastBlock();
+  const previousHashBlock = lastBlock.hash;
+  if (previousHashBlock.hash !== newBlock.previousBlockHash) {
+    bitcoin.chain.push(newBlock);
+    bitcoin.unconfirmedTransactions = [];
+    return res.status(200).json({
+      msg: "new Block accepted",
+    });
+  }
+  return res.status(400).json({
+    msg: "Invalid block, rejected!",
   });
 });
 
@@ -87,9 +124,45 @@ server.post("/register-and-broadcast-node", (req, res) => {
     });
 });
 
+server.post("/consensus", (req, res) => {
+  Promise.all(
+    bitcoin.networkNodes.map(async (nodeUrl) => {
+      return await axios
+        .get(`${nodeUrl}/blockchain`)
+        .then((response) => response.data);
+    })
+  ).then((blockchains) => {
+    let longestChain = bitcoin;
+    let thereIsLongerChain = false;
+    let newMemPool = null;
+    blockchains.forEach(async (blockchain) => {
+      if (blockchain.chain.length > longestChain.chain.length) {
+        longestChain = blockchain;
+        thereIsLongerChain = true;
+        newMemPool = blockchain.unconfirmedTransactions;
+      }
+    });
+
+    const longestChainIsValid = bitcoin.chainIsValid(longestChain);
+    console.log({ thereIsLongerChain, longestChainIsValid });
+    if (!thereIsLongerChain || (thereIsLongerChain && !longestChainIsValid)) {
+      return res.status(200).json({
+        msg: "blockchain was not replaced",
+        chain: bitcoin.chain,
+      });
+    } else {
+      bitcoin.chain = longestChain.chain;
+      bitcoin.unconfirmedTransactions = newMemPool;
+      return res.status(200).json({
+        msg: "blockchain has been replaced",
+        chain: bitcoin.chain,
+      });
+    }
+  });
+});
+
 server.post("/register-node", (req, res) => {
   const networkNodeUrl = req.body.networkNodeUrl;
-
   if (
     !bitcoin.networkNodes.includes(networkNodeUrl) &&
     bitcoin.currentNodeUrl !== networkNodeUrl
