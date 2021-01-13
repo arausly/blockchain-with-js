@@ -192,4 +192,16 @@ server.post("/register-bulk-nodes", (req, res) => {
   });
 });
 
+server.get("/block/:hash", (req, res) => {
+  const block = bitcoin.getBlock(req.params.hash);
+  return res.status(200).json({
+    block,
+  });
+});
+
+server("/transaction/:transactionId", (req, res) => {
+  const txObj = bitcoin.getTransaction(req.params.transactionId);
+  return res.json(txObj);
+});
+
 module.exports = server;

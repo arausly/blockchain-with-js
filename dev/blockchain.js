@@ -103,6 +103,29 @@ class Blockchain {
     }
     return validChain;
   };
+
+  getBlock = (hash) => {
+    return this.chain.find((block) => block.hash === hash) || null;
+  };
+
+  getTransaction = (transactionId) => {
+    let _block = null,
+      _transaction = null;
+
+    this.chain.forEach((block) => {
+      block.transactions.forEach((transaction) => {
+        if (transaction.txRef === transactionId) {
+          _block = block;
+          _transaction = transaction;
+        }
+      });
+    });
+
+    return {
+      block: _block,
+      transaction: _transaction,
+    };
+  };
 }
 
 module.exports = Blockchain;
