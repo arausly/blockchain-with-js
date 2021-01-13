@@ -126,6 +126,31 @@ class Blockchain {
       transaction: _transaction,
     };
   };
+
+  getAddress = (address) => {
+    const transactionsForAddress = [];
+    this.chain.forEach((block) => {
+      block.transactions.forEach((tx) => {
+        if (tx.output === address || tx.input === address) {
+          transactionsForAddress.push(tx);
+        }
+      });
+    });
+
+    const total = transactionsForAddress.reduce((total, tx) => {
+      if (tx.output === address) {
+        total += tx.amount;
+      } else {
+        total -= tx.amount;
+      }
+      return total;
+    }, 0);
+
+    return {
+      transactionsForAddress,
+      total,
+    };
+  };
 }
 
 module.exports = Blockchain;

@@ -204,4 +204,9 @@ server("/transaction/:transactionId", (req, res) => {
   return res.json(txObj);
 });
 
+server("/address/:address", (req, res) => {
+  const addressInfo = bitcoin.getAddress(req.params.address);
+  return res.json(addressInfo);
+});
+
 module.exports = server;
